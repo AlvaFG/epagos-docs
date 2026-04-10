@@ -1,6 +1,6 @@
-# ePagos Argentina - Documentacion Tecnica y Skill para Claude Code
+# ePagos Argentina - Documentacion Tecnica y Skills para Claude Code
 
-Documentacion completa de la API de [ePagos](https://www.epagos.com), pasarela de pagos argentina regulada por BCRA. Incluye un skill para [Claude Code](https://claude.ai/claude-code) que permite a agentes de IA integrar pagos con ePagos de forma autonoma.
+Documentacion completa de la API de [ePagos](https://www.epagos.com), pasarela de pagos argentina regulada por BCRA. Incluye skills para [Claude Code](https://claude.ai/claude-code) que permiten a agentes de IA integrar pagos con ePagos de forma autonoma.
 
 ## Que es ePagos?
 
@@ -37,53 +37,51 @@ Extraida de la documentacion oficial de ePagos (abril 2026):
 | `ePagos_Documentacion_Pagos_Recurrentes.md` | Pagos recurrentes y suscripciones |
 | `emision_masiva_epagos.md` | Emision masiva (lotes, codigo de barras, QR) |
 
-### `/skill/` - Skill para Claude Code
+### `/skill/` - Skills para Claude Code (4 skills focalizadas)
 
-`SKILL.md` es un skill consolidado que funciona como referencia completa para agentes de IA. Incluye:
+| Skill | Usar cuando... | Lineas |
+|-------|---------------|--------|
+| `epagos-echeckout/SKILL.md` | Implementar checkout, callbacks ok/error, webhooks, boton de pago JS | ~380 |
+| `epagos-reconciliation/SKILL.md` | Conciliacion diaria, obtener_pagos, rendiciones, contracargos | ~270 |
+| `epagos-soap-payments/SKILL.md` | Crear pagos via SOAP, QR, emision masiva, pagos recurrentes, POS | ~480 |
+| `epagos-reference/SKILL.md` | Buscar un ID de medio de pago, codigo de error, URL, tarjeta de test | ~400 |
 
-- URLs de sandbox y produccion
-- Flujo completo del E-Checkout (paso a paso)
-- Campos de callback por tipo de medio de pago (tarjetas, efectivo, transferencia)
-- Formato del webhook (payload completo)
-- Todos los metodos SOAP (obtener_token, solicitud_pago, obtener_pagos, rendiciones, contracargos)
-- Estados de pago (A, O, V, C, R, P, D, L)
-- Tarjetas y CBU de prueba
-- IDs de medios de pago
-- Codigos de error de todos los metodos
-- Proceso de conciliacion diaria
-- Pagos recurrentes (resumen)
+Cada skill es independiente y se carga solo cuando es relevante. Esto reduce tokens vs un unico archivo monolitico.
 
-## Como usar el Skill en Claude Code
+## Como usar los Skills en Claude Code
 
-1. Copia `skill/SKILL.md` a tu proyecto:
-   ```bash
-   mkdir -p .claude/skills/epagos
-   cp skill/SKILL.md .claude/skills/epagos/SKILL.md
-   ```
+Copia las 4 skills a tu proyecto:
 
-2. Claude Code cargara automaticamente el skill cuando trabajes en integracion de pagos con ePagos.
+```bash
+cp -r skill/* .claude/skills/
+```
+
+Claude Code cargara automaticamente el skill relevante cuando trabajes en integracion de pagos con ePagos.
 
 ## Opciones de integracion
 
 ePagos ofrece 3 formas de integrar:
 
-| Opcion | Complejidad | PCI requerido | Descripcion |
-|--------|-------------|---------------|-------------|
-| **Boton de Pago** | Basica | No | JavaScript client-side, 1 paso |
-| **E-Checkout** | Intermedia | No | Redirect server-side, 2 pasos |
-| **API SOAP** | Avanzada | Si (para tarjetas) | Server-to-server completo |
+| Opcion | Complejidad | PCI requerido | Skill | Descripcion |
+|--------|-------------|---------------|-------|-------------|
+| **Boton de Pago** | Basica | No | `epagos-echeckout` | JavaScript client-side, 1 paso |
+| **E-Checkout** | Intermedia | No | `epagos-echeckout` | Redirect server-side, 2 pasos |
+| **API SOAP** | Avanzada | Si (para tarjetas) | `epagos-soap-payments` | Server-to-server completo |
 
 Para la mayoria de los casos, **E-Checkout** es la opcion recomendada: no requiere PCI, ePagos maneja toda la UI de pago, y soporta todos los medios de pago.
 
 ## URLs
 
-| Proposito | Sandbox | Produccion |
-|-----------|---------|------------|
-| Token (POST) | `https://sandbox.epagos.com/post.php` | `https://api.epagos.com/post.php` |
-| Redirect checkout | `https://postsandbox.epagos.com` | `https://post.epagos.com` |
-| SOAP WSDL | `https://sandbox.epagos.net/wsdl/2.0/index.php?wsdl` | `https://api.epagos.net/wsdl/2.0/index.php?wsdl` |
-| JS library | `https://sandbox.epagos.com/quickstart/epagos.min.js` | `https://api.epagos.com/quickstart/epagos.min.js` |
-| Portal | `https://portalsandbox.epagos.com` | `https://portal.epagos.com` |
+| Proposito | Sandbox | Produccion | Dominio |
+|-----------|---------|------------|---------|
+| Token (POST) | `https://sandbox.epagos.com/post.php` | `https://api.epagos.com/post.php` | .com |
+| Redirect checkout | `https://postsandbox.epagos.com` | `https://post.epagos.com` | .com |
+| SOAP WSDL v2.0 (conciliacion) | `https://sandbox.epagos.net/wsdl/2.0/index.php?wsdl` | `https://api.epagos.net/wsdl/2.0/index.php?wsdl` | .net |
+| SOAP WSDL v2.1 (pagos) | `https://sandbox.epagos.com/wsdl/2.1/index.php?wsdl` | `https://api.epagos.com/wsdl/2.1/index.php?wsdl` | .com |
+| JS library | `https://sandbox.epagos.com/quickstart/epagos.min.js` | `https://api.epagos.com/quickstart/epagos.min.js` | .com |
+| Portal | `https://portalsandbox.epagos.com` | `https://portal.epagos.com` | .com |
+
+**Nota:** Los dominios `.com` y `.net` NO son intercambiables. `.com` = eCheckout + SOAP v2.1. `.net` = SOAP v2.0 (conciliacion) + namespace SOAP.
 
 ## Tarjetas de prueba (sandbox)
 
@@ -103,7 +101,7 @@ ePagos solo tiene SDK para PHP y .NET:
 - PHP: [github.com/epagos/api_php](https://github.com/epagos/api_php)
 - .NET: [github.com/epagos/api_net_core](https://github.com/epagos/api_net_core)
 
-No hay SDK de Node.js/JavaScript. El skill incluye toda la informacion necesaria para construir un cliente propio en cualquier lenguaje.
+No hay SDK de Node.js/JavaScript. Los skills incluyen toda la informacion necesaria para construir un cliente propio en cualquier lenguaje.
 
 ## Recursos
 
